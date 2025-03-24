@@ -31,3 +31,20 @@ module "ec2_was" {
   ec2_profile_name = module.iam.iam_instance_profile_name
   target_group_arn           = module.alb.target_group_arn
 }
+
+module "ecr" {
+    source = "./modules/ecr"
+    repository_name = "spring-boot-app"
+}
+
+module "codedeploy" {
+    source = "./modules/codedeploy"
+    name_prefix = "myapp"
+    autoscaling_group_names = [
+        module.ec2_was.asg_a_name,
+        module.ec2_was.asg_c_name
+    ]
+    target_group_name = module.alb.target_group.name
+    ec2_tag_name = "myapp-was"
+    codedeploy_role_arn = module.iam.iam_instance_profile_arn
+}
