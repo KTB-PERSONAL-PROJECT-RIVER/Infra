@@ -46,5 +46,4 @@ module "codedeploy" {
     ]
     target_group_name = module.alb.target_group.name
     ec2_tag_name = "myapp-was"
-    codedeploy_role_arn = module.iam.iam_instance_profile_arn
 }
