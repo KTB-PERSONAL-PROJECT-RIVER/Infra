@@ -16,6 +16,11 @@ module "alb" {
   public_subnet_ids  = module.vpc.public_subnet_ids
 }
 
+module "iam" {
+  source = "./modules/iam"
+  role_name = "myapp-ec2-codedeploy-role"
+}
+
 module "ec2_was" {
   source                     = "./modules/ec2_was"
   name_prefix                = "myapp"
@@ -23,5 +28,6 @@ module "ec2_was" {
   key_name                   = "ubuntu_river"
   instance_type              = "t3.micro"
   was_sg_id                  = module.alb.was_sg_id
+  ec2_profile_name = module.iam.iam_instance_profile_name
   target_group_arn           = module.alb.target_group_arn
 }
