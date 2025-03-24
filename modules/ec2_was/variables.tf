@@ -8,3 +8,4 @@ variable "instance_type" {
 }
 variable "was_sg_id" {}
 variable "target_group_arn" {}
+variable "ec2_profile_name" {}
