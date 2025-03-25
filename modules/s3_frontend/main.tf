@@ -1,6 +1,9 @@
 resource "aws_s3_bucket" "frontend" {
   bucket = "river-vite-app"
-  force_destroy = true
+  force_destroy = false
+    lifecycle {
+        prevent_destroy = true
+    }
 }
 
 resource "aws_s3_bucket_website_configuration" "frontend" {
