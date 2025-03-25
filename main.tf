@@ -30,6 +30,8 @@ module "ec2_was" {
   was_sg_id                  = module.alb.was_sg_id
   ec2_profile_name = module.iam.iam_instance_profile_name
   target_group_arn           = module.alb.target_group_arn
+
+  depends_on = [ module.vpc ]
 }
 
 module "ecr" {
