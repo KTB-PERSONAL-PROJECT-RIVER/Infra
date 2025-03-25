@@ -47,3 +47,8 @@ module "codedeploy" {
     target_group_name = module.alb.target_group.name
     ec2_tag_name = "myapp-was"
 }
+
+module "codedeploy_s3" {
+  source      = "./modules/s3_codedeploy"
+  bucket_name = "river-spring-codedeploy-bucket"
+}

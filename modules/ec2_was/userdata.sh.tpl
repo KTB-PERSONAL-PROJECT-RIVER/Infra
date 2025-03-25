@@ -1,11 +1,12 @@
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
 
-apt-get update -y
-apt-get install -y nginx ruby wget
+sudo apt-get update -y
+sudo apt-get install -y nginx ruby wget
+sudo apt-get install -y openjdk-17-jdk
 
 # Nginx reverse proxy to Spring Boot
-cat <<EOF > /etc/nginx/sites-available/default
+sudo cat <<EOF > /etc/nginx/sites-available/default
 server {
     listen 80;
 
@@ -19,13 +20,13 @@ server {
 }
 EOF
 
-systemctl enable nginx
-systemctl restart nginx
+sudo systemctl enable nginx
+sudo systemctl restart nginx
 
 # CodeDeploy Agent
 cd /home/ubuntu
 wget https://aws-codedeploy-ap-northeast-2.s3.amazonaws.com/latest/install
-chmod +x ./install
+sudo chmod +x ./install
 ./install auto
-systemctl enable codedeploy-agent
-systemctl start codedeploy-agent
+sudo systemctl enable codedeploy-agent
+sudo systemctl start codedeploy-agent
