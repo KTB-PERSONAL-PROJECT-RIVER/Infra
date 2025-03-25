@@ -33,14 +33,16 @@ jobs:
           TF_INPUT: false
 
       - name: Terraform Destroy
-        run: terraform destroy \
-            -target=module.vpc \
-            -target=module.alb \
-            -target=module.ec2_was \
-            -target=module.iam \
-            -target=module.codedeploy \
-            -target=module.rds_mysql \
-            -target=module.codedeploy_s3 \
-            -target=module.ecr \
-            -auto-approve
+        run: |
+          terraform destroy \
+          -target=module.vpc \
+          -target=module.alb \
+          -target=module.ec2_was \
+          -target=module.iam \
+          -target=module.codedeploy \
+          -target=module.rds_mysql \
+          -target=module.codedeploy_s3 \
+          -target=module.ecr \
+          -auto-approve
+
         
