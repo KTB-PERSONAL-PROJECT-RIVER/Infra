@@ -52,3 +52,18 @@ module "codedeploy_s3" {
   source      = "./modules/s3_codedeploy"
   bucket_name = "river-spring-codedeploy-bucket"
 }
+
+module "s3_frontend" {
+  source = "./modules/s3_frontend"
+}
+
+module "rds_mysql" {
+  source         = "./modules/rds_mysql"
+  name_prefix    = "myapp"
+  vpc_id         = module.vpc.vpc_id
+  db_subnet_ids  = module.vpc.private_db_subnet_ids
+  was_sg_id      = module.alb.was_sg_id
+  db_name        = "myappdb"
+  username       = "admin"
+  db_password = var.db_password
+}
