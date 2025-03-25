@@ -52,3 +52,7 @@ module "codedeploy_s3" {
   source      = "./modules/s3_codedeploy"
   bucket_name = "river-spring-codedeploy-bucket"
 }
+
+module "s3_frontend" {
+  source = "./modules/s3_frontend"
+}
