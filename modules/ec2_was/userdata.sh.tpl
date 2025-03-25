@@ -27,6 +27,6 @@ sudo systemctl restart nginx
 cd /home/ubuntu
 wget https://aws-codedeploy-ap-northeast-2.s3.amazonaws.com/latest/install
 sudo chmod +x ./install
-./install auto
+sudo ./install auto
 sudo systemctl enable codedeploy-agent
 sudo systemctl start codedeploy-agent
