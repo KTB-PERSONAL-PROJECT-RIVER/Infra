@@ -104,4 +104,10 @@ jobs:
               --distribution-id ${{ secrets.CLOUDFRONT_DIST_ID }} \
               --paths "/*"
         
- 
+      - name: Trigger Backend Deploy Workflow
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          repository: KTB-PERSONAL_PROJECT_RIVER/Backend
+          event-type: terraform-complete
+            
