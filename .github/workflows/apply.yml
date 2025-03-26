@@ -60,7 +60,7 @@ jobs:
             exit 1
           fi
       
-          ALB_DNS=$(grep '"value":' tf-output.json | sed -E 's/.*"value": "(.*)".*/\1/' | tr -d '\n\r')
+          ALB_DNS=$(jq -r '.alb_dns_name.value' tf-output.json)
           echo "::notice::✅ Extracted ALB DNS: $ALB_DNS"
       
           # ✅ redirect ONLY to GITHUB_OUTPUT, no console output!
