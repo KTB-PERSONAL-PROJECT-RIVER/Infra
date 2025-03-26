@@ -7,6 +7,7 @@ on:
 
 env:
     TF_VAR_db_password: ${{ secrets.DB_PASSWORD}}
+    AWS_REGION: ap-northeast-2
     
 jobs:
   terraform:
@@ -27,7 +28,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}  # 🔹 AWS 리전 설정
+          aws-region: ${{ env.AWS_REGION }}  # 🔹 AWS 리전 설정
 
       - name: Terraform Init
         run: terraform init
@@ -48,45 +49,54 @@ jobs:
         env:
           TF_INPUT: false
 
-      - name: Get ALB DNS from Terraform Output (safe JSON parse)
-        id: alb
+      - name: Get ALB DNS safely from terraform output
+        id: alb_dns
         run: |
-          echo "Getting ALB DNS (safe mode)..."
-          ALB_DNS=$(terraform output -json | jq -r '.alb_dns_name.value')
-          if [ -z "$ALB_DNS" ]; then
-            echo "❌ Failed to extract alb_dns_name from terraform output"
+          echo "Getting ALB DNS via terraform output"
+          terraform output -json > tf-output.json
+      
+          if ! grep -q "alb_dns_name" tf-output.json; then
+            echo "❌ alb_dns_name output not found"
             exit 1
           fi
-          echo "alb_dns=$ALB_DNS" >> "$GITHUB_OUTPUT"
-
-        
-      - name: Get CloudFront Config
-        id: cf_config
-        run: |
-            aws cloudfront get-distribution-config \
-              --id ${{ secrets.CLOUDFRONT_DIST_ID }} \
-              > config.json
-            echo "etag=$(jq -r .ETag config.json)" >> $GITHUB_OUTPUT
+      
+          ALB_DNS=$(grep '"value":' tf-output.json | sed -E 's/.*"value": "(.*)".*/\1/' | tr -d '\n\r')
+          echo "::notice::✅ Extracted ALB DNS: $ALB_DNS"
+      
+          # ✅ redirect ONLY to GITHUB_OUTPUT, no console output!
+          {
+            echo "alb_dns=$ALB_DNS"
+          } >> "$GITHUB_OUTPUT"
         
       - name: Update CloudFront Origin (by domain match)
         run: |
-            ALB_DNS=${{ steps.alb.outputs.alb_dns }}
-            ETAG=${{ steps.cf_config.outputs.etag }}
-        
-            jq --arg alb "$ALB_DNS" '
-              .DistributionConfig.Origins.Items |= map(
-                if (.DomainName | test("elb\\.amazonaws\\.com$")) then
-                  .DomainName = $alb
-                else
-                  .
-                end
-              )
-            ' config.json > updated-config.json
-        
-            aws cloudfront update-distribution \
-              --id ${{ secrets.CLOUDFRONT_DIST_ID }} \
-              --if-match "$ETAG" \
-              --distribution-config file://updated-config.json
+          DIST_ID=${{ secrets.CLOUDFRONT_DIST_ID }}
+          
+          echo "Getting current CloudFront config..."
+          aws cloudfront get-distribution-config --id $DIST_ID > full-config.json
+      
+          ETAG=$(jq -r .ETag full-config.json)
+          jq '.DistributionConfig' full-config.json > config.json
+      
+          # 여기서 ALB_DNS는 이전 step에서 받은 output
+          ALB_DNS=${{ steps.alb_dns.outputs.alb_dns }}
+      
+          echo "Patching origin to new ALB domain..."
+          jq --arg alb "$ALB_DNS" '
+            .Origins.Items |= map(
+              if (.DomainName | test("elb\\.amazonaws\\.com$")) then
+                .DomainName = $alb
+              else
+                .
+              end
+            )
+          ' config.json > updated-config.json
+      
+          echo "Updating CloudFront distribution..."
+          aws cloudfront update-distribution \
+            --id $DIST_ID \
+            --if-match "$ETAG" \
+            --distribution-config file://updated-config.json
         
       - name: Invalidate CloudFront Cache
         run: |

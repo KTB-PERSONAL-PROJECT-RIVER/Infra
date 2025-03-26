@@ -5,6 +5,7 @@ on:
 
 env:
   TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
+  AWS_REGION: ap-northeast-2
 
 jobs:
   terraform-destroy:
@@ -25,7 +26,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}  # 🔹 AWS 리전 설정
+          aws-region: ${{ env.AWS_REGION }}  # 🔹 AWS 리전 설정
 
       - name: Terraform Init
         run: terraform init
