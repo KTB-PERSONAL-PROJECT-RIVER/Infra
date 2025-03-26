@@ -108,6 +108,6 @@ jobs:
         uses: peter-evans/repository-dispatch@v2
         with:
           token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-          repository: KTB-PERSONAL_PROJECT_RIVER/Backend
+          repository: KTB-PERSONAL-PROJECT-RIVER/Backend
           event-type: terraform-complete
             
