@@ -3,7 +3,7 @@ name: Terraform CI/CD Pipeline
 on:
   push:
     branches:
-      - main  # 🔹 `deploy` 브랜치로 머지되면 Terraform Apply 실행
+      - main  # 🔹 `main` 브랜치로 머지되면 Terraform Apply 실행
 
 env:
     TF_VAR_db_password: ${{ secrets.DB_PASSWORD}}
@@ -47,3 +47,45 @@ jobs:
         run: terraform apply -auto-approve tfplan
         env:
           TF_INPUT: false
+
+      - name: Get ALB DNS from Terraform Output
+        id: alb
+        run: |
+            ALB_DNS=$(terraform output -raw alb_dns_name)
+            echo "alb_dns=$ALB_DNS" >> $GITHUB_OUTPUT
+        
+      - name: Get CloudFront Config
+        id: cf_config
+        run: |
+            aws cloudfront get-distribution-config \
+              --id ${{ secrets.CLOUDFRONT_DIST_ID }} \
+              > config.json
+            echo "etag=$(jq -r .ETag config.json)" >> $GITHUB_OUTPUT
+        
+      - name: Update CloudFront Origin (by domain match)
+        run: |
+            ALB_DNS=${{ steps.alb.outputs.alb_dns }}
+            ETAG=${{ steps.cf_config.outputs.etag }}
+        
+            jq --arg alb "$ALB_DNS" '
+              .DistributionConfig.Origins.Items |= map(
+                if (.DomainName | test("elb\\.amazonaws\\.com$")) then
+                  .DomainName = $alb
+                else
+                  .
+                end
+              )
+            ' config.json > updated-config.json
+        
+            aws cloudfront update-distribution \
+              --id ${{ secrets.CLOUDFRONT_DIST_ID }} \
+              --if-match "$ETAG" \
+              --distribution-config file://updated-config.json
+        
+      - name: Invalidate CloudFront Cache
+        run: |
+            aws cloudfront create-invalidation \
+              --distribution-id ${{ secrets.CLOUDFRONT_DIST_ID }} \
+              --paths "/*"
+        
+ 
