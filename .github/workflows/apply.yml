@@ -51,7 +51,7 @@ jobs:
       - name: Get ALB DNS from Terraform Output
         id: alb
         run: |
-            ALB_DNS=$(terraform output -raw alb_dns_name)
+            ALB_DNS=$(terraform output -raw alb_dns)
             echo "alb_dns=$ALB_DNS" >> $GITHUB_OUTPUT
         
       - name: Get CloudFront Config
