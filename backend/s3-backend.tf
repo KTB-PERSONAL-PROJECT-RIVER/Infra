@@ -1,5 +1,5 @@
 resource "aws_s3_bucket" "terraform_state" {
-    bucket = "ktb-river-backend"
+    bucket = "ktb-river-terraform-backend"
 }
 
 resource "aws_s3_bucket_versioning" "enabled" {
