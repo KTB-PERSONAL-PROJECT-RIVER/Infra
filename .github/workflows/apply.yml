@@ -51,8 +51,13 @@ jobs:
       - name: Get ALB DNS from Terraform Output
         id: alb
         run: |
-            ALB_DNS=$(terraform output -raw alb_dns_name)
-            echo "alb_dns=$ALB_DNS" >> $GITHUB_OUTPUT
+          echo "Getting ALB DNS..."
+          ALB_DNS=$(terraform output -raw alb_dns_name 2>/dev/null)
+          if [ -z "$ALB_DNS" ]; then
+            echo "❌ Failed to get ALB DNS"
+            exit 1
+          fi
+          echo "alb_dns=${ALB_DNS}" >> "$GITHUB_OUTPUT"
         
       - name: Get CloudFront Config
         id: cf_config
