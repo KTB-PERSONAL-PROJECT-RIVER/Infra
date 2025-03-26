@@ -54,15 +54,19 @@ jobs:
         run: |
           echo "Getting ALB DNS via terraform output"
           terraform output -json > tf-output.json
+      
           if ! grep -q "alb_dns_name" tf-output.json; then
             echo "❌ alb_dns_name output not found"
             exit 1
           fi
-          ALB_DNS=$(cat tf-output.json | grep '"value":' | sed -E 's/.*"value": "(.*)".*/\1/')
-          echo "✅ Extracted ALB DNS: $ALB_DNS"
-          echo "alb_dns=$ALB_DNS" >> "$GITHUB_OUTPUT"
-
-
+      
+          ALB_DNS=$(grep '"value":' tf-output.json | sed -E 's/.*"value": "(.*)".*/\1/' | tr -d '\n\r')
+          echo "::notice::✅ Extracted ALB DNS: $ALB_DNS"
+      
+          # ✅ redirect ONLY to GITHUB_OUTPUT, no console output!
+          {
+            echo "alb_dns=$ALB_DNS"
+          } >> "$GITHUB_OUTPUT"
         
       - name: Get CloudFront Config
         id: cf_config
