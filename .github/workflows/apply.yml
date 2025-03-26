@@ -48,16 +48,19 @@ jobs:
         env:
           TF_INPUT: false
 
-      - name: Get ALB DNS from Terraform Output (safe JSON parse)
-        id: alb
+      - name: Get ALB DNS safely from terraform output
+        id: alb_dns
         run: |
-          echo "Getting ALB DNS (safe mode)..."
-          ALB_DNS=$(terraform output -json | jq -r '.alb_dns_name.value')
-          if [ -z "$ALB_DNS" ]; then
-            echo "❌ Failed to extract alb_dns_name from terraform output"
+          echo "Getting ALB DNS via terraform output"
+          terraform output -json > tf-output.json
+          if ! grep -q "alb_dns_name" tf-output.json; then
+            echo "❌ alb_dns_name output not found"
             exit 1
           fi
+          ALB_DNS=$(cat tf-output.json | grep '"value":' | sed -E 's/.*"value": "(.*)".*/\1/')
+          echo "✅ Extracted ALB DNS: $ALB_DNS"
           echo "alb_dns=$ALB_DNS" >> "$GITHUB_OUTPUT"
+
 
         
       - name: Get CloudFront Config
