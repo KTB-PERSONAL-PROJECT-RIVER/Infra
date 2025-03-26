@@ -68,33 +68,35 @@ jobs:
             echo "alb_dns=$ALB_DNS"
           } >> "$GITHUB_OUTPUT"
         
-      - name: Get CloudFront Config
-        id: cf_config
-        run: |
-            aws cloudfront get-distribution-config \
-              --id ${{ secrets.CLOUDFRONT_DIST_ID }} \
-              > config.json
-            echo "etag=$(jq -r .ETag config.json)" >> $GITHUB_OUTPUT
-        
       - name: Update CloudFront Origin (by domain match)
         run: |
-            ALB_DNS=${{ steps.alb.outputs.alb_dns }}
-            ETAG=${{ steps.cf_config.outputs.etag }}
-        
-            jq --arg alb "$ALB_DNS" '
-              .DistributionConfig.Origins.Items |= map(
-                if (.DomainName | test("elb\\.amazonaws\\.com$")) then
-                  .DomainName = $alb
-                else
-                  .
-                end
-              )
-            ' config.json > updated-config.json
-        
-            aws cloudfront update-distribution \
-              --id ${{ secrets.CLOUDFRONT_DIST_ID }} \
-              --if-match "$ETAG" \
-              --distribution-config file://updated-config.json
+          DIST_ID=${{ secrets.CLOUDFRONT_DIST_ID }}
+          
+          echo "Getting current CloudFront config..."
+          aws cloudfront get-distribution-config --id $DIST_ID > full-config.json
+      
+          ETAG=$(jq -r .ETag full-config.json)
+          jq '.DistributionConfig' full-config.json > config.json
+      
+          # 여기서 ALB_DNS는 이전 step에서 받은 output
+          ALB_DNS=${{ steps.alb_dns.outputs.alb_dns }}
+      
+          echo "Patching origin to new ALB domain..."
+          jq --arg alb "$ALB_DNS" '
+            .Origins.Items |= map(
+              if (.DomainName | test("elb\\.amazonaws\\.com$")) then
+                .DomainName = $alb
+              else
+                .
+              end
+            )
+          ' config.json > updated-config.json
+      
+          echo "Updating CloudFront distribution..."
+          aws cloudfront update-distribution \
+            --id $DIST_ID \
+            --if-match "$ETAG" \
+            --distribution-config file://updated-config.json
         
       - name: Invalidate CloudFront Cache
         run: |
